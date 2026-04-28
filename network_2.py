@@ -156,8 +156,8 @@ if __name__ == '__main__':
         training_labels_dir='data/train-labels.gz',
         test_data_dir='data/test-images.gz',
         test_labels_dir='data/test-labels.gz',
-        load_from='weights/saved1.npz',
-        save_to='weights/saved1.npz',
+        #load_from='weights/saved1.npz',
+        save_to='weights/saved4.npz',
     )
 
-    net.SGD(15, 1.0)
+    net.SGD(15, 0.1)
