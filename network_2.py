@@ -1,3 +1,16 @@
+"""
+
+Second attempt at neural network, specific to
+the MNIST datasset.
+
+Code uses the matrix equations for feedforward
+and backpropagation and is basesd on the code from the book.
+
+Results in ~92% accuracy after 10 epochs of training and is
+significantly more efficient than network_1.py
+
+"""
+
 import time
 import random
 import gzip
@@ -8,7 +21,7 @@ IMG_SIZE = 28 * 28
 class Network:
     def __init__(self, sizes, training_data_dir, training_labels_dir,
                  test_data_dir, test_labels_dir, load_from=None, save_to=None):
-        
+
         self.sizes = sizes
         self.num_layers = len(sizes)
         self.save_to = save_to
@@ -20,6 +33,7 @@ class Network:
         # weights[layer end # -1][end node #][start node #]
         self.weights = [np.random.randn(y, x) for x, y in zip(sizes[:-1], sizes[1:])]
 
+        # Preload weights and biases
         if self.load_from is not None:
             data = np.load(self.load_from, allow_pickle=True)
 
@@ -27,12 +41,12 @@ class Network:
             self.biases = data['biases'].tolist()
             self.sizes = data['size']
 
+        # Load training and test data
         self.training_data = self.load_MNIST(training_data_dir, training_labels_dir)
         self.test_data = self.load_MNIST(test_data_dir, test_labels_dir)
 
     @staticmethod
     def load_MNIST(data_dir, labels_dir):
-
         with gzip.open(data_dir, 'rb') as f:
             tests = np.frombuffer(f.read(), np.uint8, offset=16) / 255
             tests = tests.reshape(-1, IMG_SIZE, 1)
@@ -44,25 +58,26 @@ class Network:
             labels[np.arange(len(nums)), nums] = 1
 
         return list(zip(tests, labels))
-    
 
     @staticmethod
     def sigmoid(z):
         return 1.0 / (1.0 + np.exp(-z))
-    
 
+    # Gradient of the sigmoid function
     @staticmethod
     def sigmoid_prime(z):
         return Network.sigmoid(z) * (1 - Network.sigmoid(z))
-    
 
     def feedforward(self, a):
         for b, w in zip(self.biases, self.weights):
             a = self.sigmoid(w @ a + b)
         return a
-    
 
     def SGD(self, batch_size, learning_rate):
+        """
+        Implements stochastic gradient descent on the training data
+        (the main training loop)
+        """
         try:
             epoch_number = 0
             while True:
@@ -73,13 +88,15 @@ class Network:
                 idxs = list(range(len(self.training_data)))
                 random.shuffle(idxs)
 
+                # Pass each batch of training data to the network
                 for batch_start in range(0, len(self.training_data), batch_size):
                     batch_idxs = idxs[batch_start:batch_start + batch_size]
 
                     self.train_batch(batch_idxs, learning_rate)
-                
+
                 print('Training complete. Running tests...')
 
+                # Output statistics
                 score = self.evaluate()
                 print(f'Score: {score*100:.2f}%')
 
@@ -89,6 +106,7 @@ class Network:
                 print(f'Epoch duration: {int(mins)}:{secs}')
 
         except KeyboardInterrupt:
+            # On Ctrl-C press, save progress if output file is specified
             if self.save_to is not None:
                 np.savez(
                     self.save_to,
@@ -97,12 +115,16 @@ class Network:
                     size=self.sizes,
                 )
                 print(f'Saved to \'{self.save_to}\'')
-        
 
     def train_batch(self, batch_idxs, learning_rate):
+        """
+        Train network on a specific batch of data, and update
+        weights and biases accordingly
+        """
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
 
+        # For each batch, do backprop then add to the total weights and total biases
         for batch_idx in batch_idxs:
             test, label = self.training_data[batch_idx]
             delta_nabla_b, delta_nabla_w = self.backprop(test, label)
@@ -110,26 +132,33 @@ class Network:
             nabla_b = [nb + dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw + dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
 
-        
+        # Adjust weights and biases accordingly (* -learning_rate)
         self.weights = [w - (learning_rate * nw / len(batch_idxs))
                         for w, nw in zip(self.weights, nabla_w)]
         self.biases = [b - (learning_rate * nb / len(batch_idxs))
                        for b, nb in zip(self.biases, nabla_b)]
-        
+
     def backprop(self, test, label):
+        """
+        Apply the backpropogation formulas derived in the book
+        repeatedly from final layer to first layer to determine
+        how changing each weight and bias affects the overall
+        cost function.
+        """
+
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
 
         a = test
         a_vals = [a]  # Network activations
-        z_vals = []  # Network z values
+        z_vals = []   # Network z values
 
         for b, w in zip(self.biases, self.weights):
             z = w @ a + b
             z_vals.append(z)
             a = self.sigmoid(z)
             a_vals.append(a)
-            
+
         delta = (a_vals[-1] - label.reshape(-1, 1)) * self.sigmoid_prime(z_vals[-1])
 
         nabla_b[-1] = delta
@@ -142,10 +171,14 @@ class Network:
 
             nabla_b[-l] = delta
             nabla_w[-l] = delta @ a_vals[-l - 1].T
-            
+
         return nabla_b, nabla_w
-        
+
     def evaluate(self):
+        """
+        Evalute the network on the test data
+        to determine how accurate it is
+        """
         return sum([np.argmax(self.feedforward(test)) == np.argmax(label) 
                     for test, label in self.test_data]) / len(self.test_data)
     
