@@ -86,8 +86,12 @@ class Network:
         ... # Train the network given the training data
 
     def calculate_backprop_gradients(self):
-        # Calculate how changing each weight and bias in the network
-        # affects the overall cost function (backpropagation)
+        """
+        Calculate how changing each weight and bias in the network
+        affects the overall cost function (backpropagation)
+
+        IMPORTANT: you must call calc_network AND calc_cost before calling this function    
+        """
 
         # Create new network of same dimensions, where we will calculate & fill
         # each weight and bias with the backpropogation _gradients_
@@ -120,7 +124,7 @@ class Network:
                     # Calc weight
                     grad.weights[l][j][k] = grad.activations[l][j] * \
                         self.activations[l][j] * (1 - self.activations[l][j]) * self.activations[l-1][k]
-   
+
         return grad.biases, grad.weights
 
 if __name__ == '__main__':
