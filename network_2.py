@@ -7,16 +7,25 @@ IMG_SIZE = 28 * 28
 
 class Network:
     def __init__(self, sizes, training_data_dir, training_labels_dir,
-                 test_data_dir, test_labels_dir):
+                 test_data_dir, test_labels_dir, load_from=None, save_to=None):
         
         self.sizes = sizes
         self.num_layers = len(sizes)
+        self.save_to = save_to
+        self.load_from = load_from
 
         # biases[layer # -1][node #]
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
 
         # weights[layer end # -1][end node #][start node #]
         self.weights = [np.random.randn(y, x) for x, y in zip(sizes[:-1], sizes[1:])]
+
+        if self.load_from is not None:
+            data = np.load(self.load_from, allow_pickle=True)
+
+            self.weights = data['weights'].tolist()
+            self.biases = data['biases'].tolist()
+            self.sizes = data['size']
 
         self.training_data = self.load_MNIST(training_data_dir, training_labels_dir)
         self.test_data = self.load_MNIST(test_data_dir, test_labels_dir)
@@ -80,7 +89,14 @@ class Network:
                 print(f'Epoch duration: {int(mins)}:{secs}')
 
         except KeyboardInterrupt:
-            print('\nTraining interrupted.')
+            if self.save_to is not None:
+                np.savez(
+                    self.save_to,
+                    weights=np.array(self.weights, dtype=object),
+                    biases=np.array(self.biases, dtype=object),
+                    size=self.sizes,
+                )
+                print(f'Saved to \'{self.save_to}\'')
         
 
     def train_batch(self, batch_idxs, learning_rate):
@@ -139,7 +155,9 @@ if __name__ == '__main__':
         training_data_dir='data/train-images.gz',
         training_labels_dir='data/train-labels.gz',
         test_data_dir='data/test-images.gz',
-        test_labels_dir='data/test-labels.gz'
+        test_labels_dir='data/test-labels.gz',
+        load_from='weights/saved1.npz',
+        save_to='weights/saved1.npz',
     )
 
-    net.SGD(15, 3.0)
+    net.SGD(15, 1.0)
