@@ -3,7 +3,7 @@ import gzip
 import random
 import sys
 
-from network import Network
+from network_2 import Network
 
 class Trainer:
     def __init__(self, hidden_nodes, source=None, save_to=None):
