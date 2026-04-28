@@ -82,8 +82,58 @@ class Network:
 
         return is_max_matching, avg_cost
 
-    def train(self, data):
-        ... # Train the network given the training data
+    def train_batch(self, batch, learning_rate):
+        """
+        Train the network given the training data
+
+        Return:
+        - number of matching maximums in output BEFORE updating W&Bs
+        - average cost BEFORE updating W&Bs
+        """
+
+        num_max_matching = 0 # Number of correct guesses made by the network in that batch
+        tot_cost = 0 # Total cost of the batch
+
+        # Create a 'total gradient' for each weight and bias
+        tot_bias_grads = None
+        tot_weight_grads = None
+
+        # For each piece of training data in the batch
+        for inputs, expected_output in batch:
+
+            # Calculate the cost & gradients
+            self.calc_network(inputs)
+            is_max_matching, cost = self.calc_cost(expected_output)
+            bias_grads, weight_grads = self.calculate_backprop_gradients()
+
+            num_max_matching += is_max_matching
+            tot_cost += cost
+
+            # If first piece of training data in batch,
+            # set total bias and total weight values to the biases
+            # gradients calculated
+            if tot_bias_grads is None:
+                tot_bias_grads = bias_grads
+                tot_weight_grads = weight_grads
+
+            # Otherwise, _add_ to the existing total weights and biases
+            else:
+                tot_bias_grads = [tot_bias_grad + grad if tot_bias_grad is not None else None 
+                    for tot_bias_grad, grad in zip(tot_bias_grads, bias_grads)]
+                tot_weight_grads = [tot_weight_grad + grad if tot_weight_grad is not None else None 
+                    for tot_weight_grad, grad in zip(tot_weight_grads, weight_grads)]
+
+        # Adjust network's weights and biases in the *opposite* direction (so that we MINIMISE the gradient)
+        # (Multiply by the learning rate, which is determined by function parameters)
+
+        self.biases = [curr_bias - (tot_grad / len(batch)) * learning_rate if curr_bias is not None else None 
+                        for curr_bias, tot_grad in zip(self.biases, tot_bias_grads)]
+
+        self.weights = [curr_weights - (tot_grad / len(batch)) * learning_rate if curr_weights is not None else None 
+                        for curr_weights, tot_grad in zip(self.weights, tot_weight_grads)]
+
+        # Return progress stats
+        return num_max_matching, tot_cost / len(batch)
 
     def calculate_backprop_gradients(self):
         """
