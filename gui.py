@@ -46,26 +46,9 @@ class Window:
             idx = grid_y * self.SIZE + grid_x
             self.inputs[idx, 0] = 1
 
-            # if grid_x > 0 and self.inputs[idx - 1, 0] == 0:
-            #     self.inputs[idx - 1, 0] = 1
-            #     draw_sq(grid_x-1, grid_y, "gray")
-            # if grid_x < self.SIZE - 1 and self.inputs[idx + 1, 0] == 0:
-            #     self.inputs[idx + 1, 0] = 1
-            #     draw_sq(grid_x+1, grid_y, "gray")
-            # if grid_y > 0 and self.inputs[idx - self.SIZE, 0] == 0:
-            #     self.inputs[idx - self.SIZE, 0] = 1
-            #     draw_sq(grid_x, grid_y-1, "gray")
-            # if grid_y < self.SIZE - 1 and self.inputs[idx + self.SIZE, 0] == 0:
-            #     self.inputs[idx + self.SIZE, 0] = 1
-            #     draw_sq(grid_x, grid_y+1, "gray")
-
             output = self.net.feedforward(self.inputs)
             self.curr_guess = int(np.argmax(output))
             w.draw_num(self.curr_guess)
-
-            # print(self.curr_guess)
-            # print()
-
 
     def draw_text(self,text,pos,size):
         indent = size//6 + 5
