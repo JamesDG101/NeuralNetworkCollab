@@ -1,4 +1,4 @@
-from network import Network
+from network_1 import Network
 import numpy as np
 
 H = 0.0001
