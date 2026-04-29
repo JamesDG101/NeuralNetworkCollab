@@ -6,6 +6,7 @@ from network_2 import Network
 pg.init()
 
 class Window:
+    # Initialise the window class that manages input and majority of the interface
     SIZE = 28
 
     def __init__(self):
@@ -25,14 +26,14 @@ class Window:
             load_from='weights/saved3-30.npz',
         )
 
-    def draw_grid(self,square_size):
+    def draw_grid(self,square_size): # Draws grid based on resolution of images and size of each pixel
         for square_x in range(self.SIZE):
             for square_y in range(self.SIZE):
                 position = (square_x*square_size,square_y*square_size,square_size,square_size)
                 pg.draw.rect(self.window,"black",position,1)
 
-    def draw(self):
-        def draw_sq(grid_x, grid_y, color="black"):
+    def draw(self): 
+        def draw_sq(grid_x, grid_y, color="black"):# Fills in correct cell when mouse is dragged over
             position = (grid_x * SQUARE_SIZE, grid_y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE)
             pg.draw.rect(self.window, color, position)
         
@@ -50,7 +51,7 @@ class Window:
             self.curr_guess = int(np.argmax(output))
             w.draw_num(self.curr_guess)
 
-    def draw_text(self,text,pos,size):
+    def draw_text(self,text,pos,size): # Basic function to draw text to window
         indent = size//6 + 5
         pos = [pos[0]+indent,pos[1]+indent]
         font = pg.font.SysFont(None,size)
@@ -58,13 +59,13 @@ class Window:
         self.window.blit(text,(pos))
     
 
-    def draw_num(self,num):
+    def draw_num(self,num): # Function that draws number with highest probability
         position = (800,100,220,300)
         pg.draw.rect(self.window, "white", position)
         pg.draw.rect(self.window, "black", position, 10)
         self.draw_text(str(num), position, 300)
 
-    def handle_clear(self):
+    def handle_clear(self): # Reset data inputs
         self.inputs = np.zeros(((self.SIZE ** 2), 1))
         self.curr_guess = 0
 
@@ -77,7 +78,7 @@ class Button:
 
         self.rect = pg.Rect(pos[0],pos[1],size[0],size[1])
 
-    def is_clicked(self,pos):
+    def is_clicked(self,pos): # Handles graphics when clear button activated
         if self.rect.collidepoint(pos):
             w.handle_clear()
             w.window.fill("white")
