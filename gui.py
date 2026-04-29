@@ -1,8 +1,9 @@
 import pygame as pg
-import math
+import numpy as np
+
+from network_2 import Network
+
 pg.init()
-
-
 
 class Window:
     SIZE = 28
@@ -11,29 +12,60 @@ class Window:
         self.window = pg.display.set_mode((1200,644))
         pg.display.set_caption("GUI")
         self.window.fill("white")
-        
 
+        self.inputs = np.zeros(((self.SIZE ** 2), 1))
+        self.curr_guess = 0
 
+        self.net = Network(
+            sizes=[self.SIZE ** 2, 30, 10],
+            training_data_dir='data/train-images.gz',
+            training_labels_dir='data/train-labels.gz',
+            test_data_dir='data/test-images.gz',
+            test_labels_dir='data/test-labels.gz',
+            load_from='weights/saved3-30.npz',
+        )
 
     def draw_grid(self,square_size):
-        start = (0,0)
-        
-
-        x_pos = start[0]
-        y_pos = start[1]
         for square_x in range(self.SIZE):
             for square_y in range(self.SIZE):
                 position = (square_x*square_size,square_y*square_size,square_size,square_size)
                 pg.draw.rect(self.window,"black",position,1)
-    
+
     def draw(self):
-        mouse_pos = pg.mouse.get_pos()
-        if mouse_pos[0] <= 644 and mouse_pos[1] <= 644:
-            mouse_square = (math.ceil(mouse_pos[0]/23),math.ceil(mouse_pos[1]/23))
+        def draw_sq(grid_x, grid_y, color="black"):
+            position = (grid_x * SQUARE_SIZE, grid_y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE)
+            pg.draw.rect(self.window, color, position)
         
-            mouse_square = [mouse_square[0]-1,mouse_square[1]-1]
-            position = [mouse_square[0]*23,mouse_square[1]*23,23,23]
-            pg.draw.rect(self.window,"black",position)
+        mouse_pos = pg.mouse.get_pos()
+        if 0 <= mouse_pos[0] < self.SIZE * SQUARE_SIZE and 0 <= mouse_pos[1] < self.SIZE * SQUARE_SIZE:
+            grid_x = mouse_pos[0] //SQUARE_SIZE
+            grid_y = mouse_pos[1] //SQUARE_SIZE
+
+            draw_sq(grid_x, grid_y)
+
+            idx = grid_y * self.SIZE + grid_x
+            self.inputs[idx, 0] = 1
+
+            # if grid_x > 0 and self.inputs[idx - 1, 0] == 0:
+            #     self.inputs[idx - 1, 0] = 1
+            #     draw_sq(grid_x-1, grid_y, "gray")
+            # if grid_x < self.SIZE - 1 and self.inputs[idx + 1, 0] == 0:
+            #     self.inputs[idx + 1, 0] = 1
+            #     draw_sq(grid_x+1, grid_y, "gray")
+            # if grid_y > 0 and self.inputs[idx - self.SIZE, 0] == 0:
+            #     self.inputs[idx - self.SIZE, 0] = 1
+            #     draw_sq(grid_x, grid_y-1, "gray")
+            # if grid_y < self.SIZE - 1 and self.inputs[idx + self.SIZE, 0] == 0:
+            #     self.inputs[idx + self.SIZE, 0] = 1
+            #     draw_sq(grid_x, grid_y+1, "gray")
+
+            output = self.net.feedforward(self.inputs)
+            self.curr_guess = int(np.argmax(output))
+            w.draw_num(self.curr_guess)
+
+            # print(self.curr_guess)
+            # print()
+
 
     def draw_text(self,text,pos,size):
         indent = size//6 + 5
@@ -45,15 +77,13 @@ class Window:
 
     def draw_num(self,num):
         position = (800,100,220,300)
-        pg.draw.rect(self.window,"black",position,10)
-        self.draw_text(str(num),position,300)
+        pg.draw.rect(self.window, "white", position)
+        pg.draw.rect(self.window, "black", position, 10)
+        self.draw_text(str(num), position, 300)
 
-
-    def handle_clear():
-        pass
-
-
-
+    def handle_clear(self):
+        self.inputs = np.zeros(((self.SIZE ** 2), 1))
+        self.curr_guess = 0
 
 class Button:
     def __init__(self,pos,size,text=None,text_size=None):
@@ -66,21 +96,17 @@ class Button:
 
     def is_clicked(self,pos):
         if self.rect.collidepoint(pos):
+            w.handle_clear()
             w.window.fill("white")
             w.draw_grid(SQUARE_SIZE)
             self.draw_btn()
-            w.draw_num(9)
+            w.draw_num(w.curr_guess)
 
     def draw_btn(self):
-
-        w.draw_text(self.text,self.pos,self.text_size)
-
-        pg.draw.rect(w.window,"black",(self.pos[0],self.pos[1],self.size[0],self.size[1]),5)
-
-
+        pg.draw.rect(w.window, "black", (self.pos[0], self.pos[1], self.size[0], self.size[1]), 5)
+        w.draw_text(self.text, self.pos, self.text_size)
 
 SQUARE_SIZE = 23
-
 w = Window()
 w.draw_grid(SQUARE_SIZE)
 
@@ -97,14 +123,7 @@ while running:
         
     if pg.mouse.get_pressed()[0]:
         w.draw()
-
-    
-        
-
-   
+  
     pg.display.flip()
-
-
-
 
 pg.quit()
