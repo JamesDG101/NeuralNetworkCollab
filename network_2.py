@@ -16,6 +16,11 @@ import random
 import gzip
 import numpy as np
 
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
+
 IMG_SIZE = 28 * 28
 
 class Network:
@@ -78,6 +83,10 @@ class Network:
         Implements stochastic gradient descent on the training data
         (the main training loop)
         """
+        epoch_numbers = []
+        training_percents = []
+        test_percents = []
+
         try:
             epoch_number = 0
             while True:
@@ -97,8 +106,15 @@ class Network:
                 print('Training complete. Running tests...')
 
                 # Output statistics
-                score = self.evaluate()
-                print(f'Score: {score*100:.2f}%')
+                train_score = self.evaluate(self.training_data)
+                test_score = self.evaluate(self.test_data)
+
+                epoch_numbers.append(epoch_number)
+                training_percents.append(train_score * 100)
+                test_percents.append(test_score * 100)
+
+                print(f'Training score: {train_score*100:.2f}%')
+                print(f'Test score: {test_score*100:.2f}%')
 
                 time_diff = time.time() - start_time
                 mins, secs = divmod(time_diff, 60)
@@ -115,6 +131,10 @@ class Network:
                     size=self.sizes,
                 )
                 print(f'Saved to \'{self.save_to}\'')
+
+        finally:
+            if epoch_numbers:
+                self.plot_epoch_scores(epoch_numbers, training_percents, test_percents)
 
     def train_batch(self, batch_idxs, learning_rate):
         """
@@ -174,13 +194,31 @@ class Network:
 
         return nabla_b, nabla_w
 
-    def evaluate(self):
+    def evaluate(self, dataset):
         """
-        Evalute the network on the test data
+        Evaluate the network on a dataset
         to determine how accurate it is
         """
-        return sum([np.argmax(self.feedforward(test)) == np.argmax(label) 
-                    for test, label in self.test_data]) / len(self.test_data)
+        return sum([np.argmax(self.feedforward(test)) == np.argmax(label)
+                    for test, label in dataset]) / len(dataset)
+
+    @staticmethod
+    def plot_epoch_scores(epoch_numbers, training_percents, test_percents):
+        if plt is None:
+            print('Matplotlib is not installed, skipping progress plot.')
+            return
+
+        plt.figure(figsize=(8, 5))
+        plt.plot(epoch_numbers, training_percents, marker='o', label='Training %')
+        plt.plot(epoch_numbers, test_percents, marker='s', label='Test %')
+        plt.title('Accuracy Per Epoch')
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy (%)')
+        plt.ylim(0, 100)
+        plt.grid(True, alpha=0.3)
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
     
 if __name__ == '__main__':
     net = Network(
